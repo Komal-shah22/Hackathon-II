@@ -2,7 +2,9 @@
 name = "todo-cli-app"
 version = "0.1.0"
 description = "A highly polished, feature-rich TODO CLI app."
-authors = ["Your Name <you@example.com>"]
+authors = [
+    {name = "Your Name", email = "you@example.com"}
+]
 requires-python = ">=3.13"
 license = "MIT"
 dependencies = [

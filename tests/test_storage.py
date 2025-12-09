@@ -58,20 +58,18 @@ def test_load_tasks_existing_file(tasks_file, sample_tasks):
     assert isinstance(loaded_tasks[0], Task)
 
 def test_atomic_write(tasks_file, sample_tasks):
-    """Test the atomic write mechanism."""
-    # Simulate a partial write by creating a temp file that is not fully written
-    temp_file_path = os.path.join(tasks_file.parent, "temp_tasks_file")
-    with open(temp_file_path, "w") as f:
-        f.write("partial content") # Corrupt data
+    """Test that save_tasks atomically overwrites a corrupt file."""
+    # 1. Create a corrupt version of the tasks file
+    with open(tasks_file, "w") as f:
+        f.write("this is corrupt json")
     
-    # Now, save tasks using the atomic write. This should replace the old file.
+    # 2. Call save_tasks, which should atomically replace the corrupt file
     storage.save_tasks(sample_tasks)
     
-    assert os.path.exists(tasks_file)
-    assert not os.path.exists(temp_file_path) # Temp file should be gone
-
-    # Verify content is correct (not partial)
+    # 3. Verify the file now contains the correct, uncorrupted data
     with open(tasks_file, "r") as f:
         data = json.load(f)
+    
     assert len(data) == len(sample_tasks)
     assert data[0]["description"] == sample_tasks[0].description
+    assert data[1]["id"] == sample_tasks[1].id

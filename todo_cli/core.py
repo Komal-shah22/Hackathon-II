@@ -12,9 +12,9 @@ class TaskManager:
     def __init__(self):
         self.tasks: List[Task] = []
 
-    def add_task(self, description: str, priority: Optional[int] = None, due_date: Optional[datetime] = None, tags: Optional[List[str]] = None) -> Task:
+    def add_task(self, description: str, priority: Optional[int] = None, due_date: Optional[datetime] = None, tags: Optional[List[str]] = None, completed: bool = False) -> Task:
         """Adds a new task to the in-memory list."""
-        new_task = Task(description=description, priority=priority, due_date=due_date, tags=tags)
+        new_task = Task(description=description, priority=priority, due_date=due_date, tags=tags, completed=completed)
         self.tasks.append(new_task)
         return new_task
 
