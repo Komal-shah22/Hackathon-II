@@ -208,3 +208,10 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+
+## Active Technologies
+- Python 3.13+ + `typer`, `pytest` (001-advanced-task-management)
+- In-memory dictionary (001-advanced-task-management)
+
+## Recent Changes
+- 001-advanced-task-management: Added Python 3.13+ + `typer`, `pytest`
