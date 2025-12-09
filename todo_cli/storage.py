@@ -22,10 +22,11 @@ def save_tasks(tasks: List[Task]):
     Saves tasks to the JSON storage file using atomic write.
     """
     tasks_data = [task.to_dict() for task in tasks]
-    
-    # Use a temporary file for atomic write
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as temp_file:
+
+    # Create temporary file in the same directory as TASKS_FILE
+    temp_file_path = TASKS_FILE + ".tmp"
+    with open(temp_file_path, "w", encoding="utf-8") as temp_file:
         json.dump(tasks_data, temp_file, indent=4)
-    
+
     # Atomically replace the old file with the new one
-    os.replace(temp_file.name, TASKS_FILE)
+    os.replace(temp_file_path, TASKS_FILE)

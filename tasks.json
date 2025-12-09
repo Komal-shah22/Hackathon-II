@@ -1,0 +1,38 @@
+[
+    {
+        "id": "a1a47878-b0d5-4491-bad1-53799915e048",
+        "description": "perform namaz",
+        "completed": true,
+        "priority": 1,
+        "due_date": "2025-12-10T00:00:00",
+        "tags": [
+            "special"
+        ]
+    },
+    {
+        "id": "9c37f12b-33ee-4875-8659-a0e6df6a8229",
+        "description": "milk boil",
+        "completed": false,
+        "priority": 1,
+        "due_date": null,
+        "tags": [
+            "routeen"
+        ]
+    },
+    {
+        "id": "9f84a65c-8bf7-4a55-b0d8-486e6c2c9bc2",
+        "description": "komal",
+        "completed": false,
+        "priority": 1,
+        "due_date": null,
+        "tags": []
+    },
+    {
+        "id": "41d26224-ccb1-449e-bbda-f2677f2c6b89",
+        "description": "exercise",
+        "completed": false,
+        "priority": 1,
+        "due_date": null,
+        "tags": []
+    }
+]
