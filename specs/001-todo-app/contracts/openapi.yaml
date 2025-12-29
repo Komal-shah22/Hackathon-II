@@ -1,0 +1,686 @@
+openapi: 3.0.0
+info:
+  title: Todo App API
+  version: 1.0.0
+  description: Full-Stack Todo Application API with authentication and task management
+
+servers:
+  - url: http://localhost:8000/api
+    description: Development server
+  - url: https://api.yourdomain.com/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User registration and login endpoints
+  - name: Tasks
+    description: Task CRUD and management endpoints
+  - name: Statistics
+    description: User statistics and analytics endpoints
+
+paths:
+  # ==================== AUTHENTICATION ====================
+  /auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Create a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/signin:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate user and get JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigninRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user (client-side token removal)
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Logout successful
+
+  # ==================== TASKS ====================
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: List all tasks for current user
+      security:
+        - Bearer: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term to filter by title or description
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [all, pending, completed]
+          description: Filter by completion status
+          default: all
+        - in: query
+          name: priority
+          schema:
+            type: string
+            enum: [all, high, medium, low, none]
+          description: Filter by priority level
+          default: all
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [all, work, personal, shopping, health, finance, other]
+          description: Filter by category
+          default: all
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            enum: [created_at, due_date, priority, title]
+          description: Field to sort by
+          default: created_at
+        - in: query
+          name: sort_order
+          schema:
+            type: string
+            enum: [asc, desc]
+          description: Sort direction
+          default: desc
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  total:
+                    type: integer
+                    description: Total number of tasks matching filters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Tasks
+      summary: Create a new task
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tasks/{task_id}:
+    parameters:
+      - in: path
+        name: task_id
+        required: true
+        schema:
+          type: integer
+        description: Task ID
+
+    get:
+      tags:
+        - Tasks
+      summary: Get a single task by ID
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          description: Not authorized to access this task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Tasks
+      summary: Update an existing task
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Tasks
+      summary: Delete a task
+      security:
+        - Bearer: []
+      responses:
+        '204':
+          description: Task deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{task_id}/complete:
+    put:
+      tags:
+        - Tasks
+      summary: Toggle task completion status
+      security:
+        - Bearer: []
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                completed:
+                  type: boolean
+              required: [completed]
+      responses:
+        '200':
+          description: Task completion toggled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
+                  next_occurrence:
+                    $ref: '#/components/schemas/Task'
+                    description: Newly created recurring task (if applicable)
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== STATISTICS ====================
+  /users/{user_id}/stats:
+    get:
+      tags:
+        - Statistics
+      summary: Get task statistics for a user
+      security:
+        - Bearer: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        '200':
+          description: User statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStats'
+        '403':
+          description: Not authorized to access this user's stats
+        '404':
+          description: User not found
+
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token in Authorization header
+
+  schemas:
+    # ==================== AUTH SCHEMAS ====================
+    SignupRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          description: Minimum 8 characters
+          example: securePassword123
+
+    SigninRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          description: JWT access token
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          nullable: true
+        image:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ==================== TASK SCHEMAS ====================
+    TaskPriority:
+      type: string
+      enum: [high, medium, low]
+      description: Task priority level
+
+    TaskCategory:
+      type: string
+      enum: [work, personal, shopping, health, finance, other]
+      description: Task category
+
+    RecurrencePattern:
+      type: string
+      enum: [daily, weekly, monthly]
+      description: Recurrence pattern
+
+    Task:
+      type: object
+      required: [id, user_id, title, completed, created_at, updated_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        completed:
+          type: boolean
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+          nullable: true
+        category:
+          $ref: '#/components/schemas/TaskCategory'
+          nullable: true
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        reminder_time:
+          type: string
+          format: date-time
+          nullable: true
+        reminder_sent:
+          type: boolean
+          default: false
+        is_recurring:
+          type: boolean
+          default: false
+        recurrence_pattern:
+          $ref: '#/components/schemas/RecurrencePattern'
+          nullable: true
+        recurrence_interval:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: Every N days/weeks/months
+        recurrence_days:
+          type: string
+          nullable: true
+          description: JSON array of day names for weekly recurrence
+        recurrence_end_date:
+          type: string
+          format: date-time
+          nullable: true
+        parent_task_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID of parent task in recurring series
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateTaskRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: Buy groceries
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+          example: Milk, eggs, bread
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+          nullable: true
+        category:
+          $ref: '#/components/schemas/TaskCategory'
+          nullable: true
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        reminder_time:
+          type: string
+          format: date-time
+          nullable: true
+        is_recurring:
+          type: boolean
+          default: false
+        recurrence_pattern:
+          $ref: '#/components/schemas/RecurrencePattern'
+          nullable: true
+        recurrence_interval:
+          type: integer
+          minimum: 1
+          nullable: true
+          default: 1
+        recurrence_days:
+          type: string
+          nullable: true
+        recurrence_end_date:
+          type: string
+          format: date-time
+          nullable: true
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          nullable: true
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+          nullable: true
+        category:
+          $ref: '#/components/schemas/TaskCategory'
+          nullable: true
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        reminder_time:
+          type: string
+          format: date-time
+          nullable: true
+        is_recurring:
+          type: boolean
+          nullable: true
+        recurrence_pattern:
+          $ref: '#/components/schemas/RecurrencePattern'
+          nullable: true
+        recurrence_interval:
+          type: integer
+          minimum: 1
+          nullable: true
+        recurrence_days:
+          type: string
+          nullable: true
+        recurrence_end_date:
+          type: string
+          format: date-time
+          nullable: true
+
+    TaskFilters:
+      type: object
+      description: Task filter options
+      properties:
+        status:
+          type: string
+          enum: [all, pending, completed]
+        priority:
+          type: string
+          enum: [all, high, medium, low, none]
+        category:
+          type: string
+          enum: [all, work, personal, shopping, health, finance, other]
+
+    TaskSort:
+      type: object
+      description: Task sort options
+      properties:
+        field:
+          type: string
+          enum: [created_at, due_date, priority, title]
+        direction:
+          type: string
+          enum: [asc, desc]
+
+    # ==================== STATISTICS SCHEMAS ====================
+    UserStats:
+      type: object
+      properties:
+        total_tasks:
+          type: integer
+          description: Total number of tasks
+        completed_tasks:
+          type: integer
+          description: Number of completed tasks
+        pending_tasks:
+          type: integer
+          description: Number of pending tasks
+        completion_rate:
+          type: number
+          format: float
+          description: Percentage of completed tasks (0.0 to 1.0)
+        overdue_count:
+          type: integer
+          description: Number of overdue incomplete tasks
+        due_today_count:
+          type: integer
+          description: Number of tasks due today
+        completed_this_week:
+          type: integer
+          description: Tasks completed in the last 7 days
+        by_category:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Task count grouped by category
+        by_priority:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Task count grouped by priority
+
+    # ==================== ERROR SCHEMAS ====================
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+          description: Error message
+
+    ValidationError:
+      type: object
+      properties:
+        loc:
+          type: array
+          items:
+            type: string
+        msg:
+          type: string
+        type:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request data
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: Validation error
+              errors:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ValidationError'
+
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: Could not validate credentials
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: Task not found
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
