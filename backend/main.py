@@ -1,9 +1,15 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from routes.health import router as health_router
 from routes.tasks import router as tasks_router
 from routes.auth import router as auth_router
+from routes.chat import router as chat_router
+from mcp_server import mcp_server
+from mcp_server.tools import register_all_mcp_tools # Import the registration function
 from db import init_db
 
 app = FastAPI(
@@ -40,6 +46,11 @@ def startup_event():
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(tasks_router)
+app.include_router(chat_router)
+
+app.mount("/mcp", mcp_server)
+
+register_all_mcp_tools(mcp_server) # Call the registration function here
 
 
 @app.get("/")

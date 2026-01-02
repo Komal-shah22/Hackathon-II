@@ -83,3 +83,30 @@ class Task(SQLModel, table=True):
 
     class Config:
         from_attributes = True
+
+
+class Conversation(SQLModel, table=True):
+    """Represents a unique chat session between a user and the AI assistant."""
+    __tablename__ = "conversations"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(foreign_key="users.id", index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    messages: List["Message"] = Relationship(back_populates="conversation", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+
+class Message(SQLModel, table=True):
+    """Represents a single message within a conversation."""
+    __tablename__ = "messages"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    conversation_id: int = Field(foreign_key="conversations.id", index=True)
+    user_id: str = Field(foreign_key="users.id", index=True)
+    role: str = Field(...)  # 'user', 'assistant', 'system', 'tool'
+    content: str = Field(...)
+    tool_call_id: Optional[str] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    conversation: Optional[Conversation] = Relationship(back_populates="messages")

@@ -54,7 +54,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-async def signup(user_data: UserCreate, session: Session = Depends(get_session)):
+def signup(user_data: UserCreate, session: Session = Depends(get_session)):
     """
     Create a new user account.
 
@@ -94,7 +94,7 @@ async def signup(user_data: UserCreate, session: Session = Depends(get_session))
 
 
 @router.post("/signin", response_model=AuthResponse)
-async def signin(credentials: UserLogin, session: Session = Depends(get_session)):
+def signin(credentials: UserLogin, session: Session = Depends(get_session)):
     """
     Authenticate a user and return a JWT token.
 
@@ -180,7 +180,7 @@ async def get_current_user_id(
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user(
+def get_current_user(
     current_user_id: str = Depends(get_current_user_id),
     session: Session = Depends(get_session)
 ):

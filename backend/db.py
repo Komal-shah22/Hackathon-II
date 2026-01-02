@@ -2,7 +2,7 @@ import os
 from sqlmodel import create_engine, Session, SQLModel
 
 # Import your models here
-from models import User, Task
+from models import User, Task, Conversation, Message
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -15,10 +15,14 @@ engine = create_engine(
     echo=False
 )
 
+
 def get_session():
     """Dependency for FastAPI to get database session"""
-    with Session(engine) as session:
+    session = Session(engine)
+    try:
         yield session
+    finally:
+        session.close()
 
 def init_db():
     """Initialize database tables"""

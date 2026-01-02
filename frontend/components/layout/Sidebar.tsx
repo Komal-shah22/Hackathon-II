@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
-import { FiX, FiLogOut, FiUser, FiGrid, FiCheckSquare, FiBarChart2, FiSettings } from 'react-icons/fi';
+import { FiX, FiLogOut, FiUser, FiGrid, FiCheckSquare, FiBarChart2, FiSettings, FiMessageSquare } from 'react-icons/fi';
 import { useAuth } from '@/components/auth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -45,6 +45,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { href: '/dashboard', label: 'DASHBOARD', icon: FiGrid },
     { href: '/dashboard/tasks', label: 'TASKS', icon: FiCheckSquare },
     { href: '/dashboard/statistics', label: 'STATISTICS', icon: FiBarChart2 },
+    { href: '/chatbot', label: 'CHATBOT', icon: FiMessageSquare },
     { href: '/dashboard/settings', label: 'SETTINGS', icon: FiSettings },
   ];
 
