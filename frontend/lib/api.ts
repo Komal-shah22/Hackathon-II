@@ -231,6 +231,24 @@ class ApiClient {
       { retries: 2 }
     );
   }
+
+  // ============ Chatbot API ============
+
+  async chatWithBot(userId: string, message: string, conversationId?: number) {
+    const requestBody: { message: string; conversation_id?: number } = { message };
+    if (conversationId) {
+      requestBody.conversation_id = conversationId;
+    }
+
+    return this.fetch<import('./types').ChatResponse>(
+      `/api/${userId}/chat`,
+      {
+        method: 'POST',
+        body: requestBody,
+        retries: 1
+      }
+    );
+  }
 }
 
 export const api = new ApiClient();

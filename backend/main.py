@@ -4,7 +4,13 @@ from fastapi.responses import HTMLResponse
 from routes.health import router as health_router
 from routes.tasks import router as tasks_router
 from routes.auth import router as auth_router
+from routes.chatbot import router as chatbot_router
 from db import init_db
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = FastAPI(
     title="Todo App API",
@@ -20,13 +26,20 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "http://127.0.0.1:3000"
-        # "https://*.vercel.app"
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",  # Additional common dev port
+        "http://127.0.0.1:3001",
+        "http://0.0.0.0:3000",   # Docker container access
+        "http://localhost:3002",  # Additional common dev port
+        "http://127.0.0.1:3002",
+        "https://*.vercel.app",  # For Vercel deployments
+        "http://localhost:19006",  # For Expo apps
+        "exp://*",  # For Expo apps
+        "*"  # Allow all origins in development - remove for production
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 
@@ -40,6 +53,7 @@ def startup_event():
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(tasks_router)
+app.include_router(chatbot_router)
 
 
 @app.get("/")
@@ -120,6 +134,10 @@ async def api_docs():
         <h2>Health Endpoints</h2>
         <div class="endpoint">
             <span class="method get">GET</span> <code>/health</code> - Health check
+        </div>
+        <h2>Chatbot Endpoints</h2>
+        <div class="endpoint">
+            <span class="method post">POST</span> <code>/api/{user_id}/chat</code> - Chat with AI assistant
         </div>
     </body>
     </html>

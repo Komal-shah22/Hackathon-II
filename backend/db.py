@@ -2,18 +2,21 @@ import os
 from sqlmodel import create_engine, Session, SQLModel
 
 # Import your models here
-from models import User, Task
+from models import User, Task, Conversation, Message
 
+# Use SQLite for local development, PostgreSQL for production
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    'postgresql://neondb_owner:npg_rmJXS1K6anUh@ep-young-paper-a42jjvi2-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+    "sqlite:///./todo_app.db"  # Local SQLite database
 )
 
 # Create SQLModel engine
-engine = create_engine(
-    DATABASE_URL,
-    echo=False
-)
+if DATABASE_URL.startswith("sqlite"):
+    # SQLite doesn't support some features, so we disable them
+    engine = create_engine(DATABASE_URL, echo=False)
+else:
+    # For PostgreSQL, we can use the full feature set
+    engine = create_engine(DATABASE_URL, echo=False)
 
 def get_session():
     """Dependency for FastAPI to get database session"""

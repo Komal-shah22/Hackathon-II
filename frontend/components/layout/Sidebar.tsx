@@ -43,6 +43,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const navLinks = [
     { href: '/dashboard', label: 'DASHBOARD', icon: FiGrid },
+    { href: '/chat', label: 'AI CHATBOT', icon: FiCheckSquare },
     { href: '/dashboard/tasks', label: 'TASKS', icon: FiCheckSquare },
     { href: '/dashboard/statistics', label: 'STATISTICS', icon: FiBarChart2 },
     { href: '/dashboard/settings', label: 'SETTINGS', icon: FiSettings },

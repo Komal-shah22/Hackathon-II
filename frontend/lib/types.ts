@@ -119,3 +119,20 @@ export interface TaskFilters {
   sort_by: 'created_at' | 'due_date' | 'priority' | 'title';
   sort_order: 'asc' | 'desc';
 }
+
+// Chatbot types
+export interface ChatRequest {
+  conversation_id?: number;
+  message: string;
+}
+
+export interface ToolCall {
+  name: string;
+  arguments: Record<string, any>;
+}
+
+export interface ChatResponse {
+  conversation_id: number;
+  response: string;
+  tool_calls: ToolCall[];
+}

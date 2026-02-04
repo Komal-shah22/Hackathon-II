@@ -16,6 +16,7 @@ class User(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     tasks: List["Task"] = Relationship(back_populates="user")
+    conversations: List["Conversation"] = Relationship(back_populates="user")
 
 
 class TaskPriority(str, Enum):
@@ -83,3 +84,45 @@ class Task(SQLModel, table=True):
 
     class Config:
         from_attributes = True
+
+
+class Conversation(SQLModel, table=True):
+    """Conversation entity for AI chatbot interactions."""
+    __tablename__ = "conversations"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(index=True, foreign_key="users.id")
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    user: Optional[User] = Relationship(back_populates="conversations")
+    messages: List["Message"] = Relationship(back_populates="conversation")
+
+
+class MessageRole(str, Enum):
+    USER = "user"
+    ASSISTANT = "assistant"
+
+
+class Message(SQLModel, table=True):
+    """Message entity for storing conversation history."""
+    __tablename__ = "messages"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    conversation_id: int = Field(index=True, foreign_key="conversations.id")
+    user_id: str = Field(index=True, foreign_key="users.id")
+    role: MessageRole = Field(sa_column_kwargs={"name": "role"})
+    content: str = Field(max_length=5000)  # Allow longer messages for detailed responses
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+
+    # Relationships
+    conversation: Optional[Conversation] = Relationship(back_populates="messages")
+    user: Optional[User] = Relationship()
+
+    class Config:
+        from_attributes = True
+
+
+# Update User model to include relationships to conversations
+User.model_rebuild()

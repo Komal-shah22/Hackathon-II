@@ -186,3 +186,33 @@ class ErrorResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ============ Chatbot Schemas ============
+
+class ChatRequest(BaseModel):
+    """Request schema for chat endpoint"""
+    conversation_id: Optional[int] = None
+    message: str = Field(min_length=1, max_length=2000)
+
+    class Config:
+        from_attributes = True
+
+
+class ToolCall(BaseModel):
+    """Schema for representing a tool call made by the AI"""
+    name: str
+    arguments: dict
+
+    class Config:
+        from_attributes = True
+
+
+class ChatResponse(BaseModel):
+    """Response schema for chat endpoint"""
+    conversation_id: int
+    response: str
+    tool_calls: List[ToolCall] = []
+
+    class Config:
+        from_attributes = True

@@ -1,46 +1,34 @@
-# Todo Web App (Phase 2) - Enhanced with Phase 3: AI Chatbot
+# Todo Web App (Phase 2) - Full-Stack Professional Application
 
 ## Overview
-This is a full-stack todo application built with Next.js 16 and FastAPI, featuring advanced task management capabilities, modern UI/UX design, and an AI-powered chatbot for natural language task management. This represents the completion of both Phase 2 ("Full-Stack Web Application") and Phase 3 ("AI-Powered Todo Chatbot").
+This is a full-stack todo application built with Next.js 16 and FastAPI, featuring advanced task management capabilities and modern UI/UX design. This represents Phase 2 of the hackathon: "Full-Stack Web Application".
 
 ## Tech Stack
 - **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS, Framer Motion, Shadcn UI
 - **Backend**: FastAPI, Python 3.11+, SQLModel
 - **Database**: PostgreSQL (Neon)
 - **Authentication**: JWT with bcrypt password hashing
-- **AI Integration**: OpenAI API, MCP (Model Context Protocol) Server
 
-## Features Implemented
+## Features Implemented in Phase 2
 
-### Phase 2 Features (Full-Stack Web Application)
-
-#### Basic Features (P1 - Core Essentials)
+### Basic Features (P1 - Core Essentials)
 - User authentication (signup, signin, logout)
 - Create, read, update, delete tasks
 - Mark tasks as complete/incomplete
 - Protected routes with JWT verification
 
-#### Intermediate Features (P2 - Organization & Usability)
+### Intermediate Features (P2 - Organization & Usability)
 - Priority levels (High, Medium, Low)
 - Categories (Work, Personal, Shopping, Health, Finance, Other)
 - Search tasks by title and description
 - Filter by status, priority, and category
 - Sort by created date, due date, priority, or title
 
-#### Advanced Features (P3 - Intelligent Features)
+### Advanced Features (P3 - Intelligent Features)
 - Due dates with date/time pickers
 - Browser notification reminders
 - Recurring tasks (daily, weekly, monthly)
 - Task statistics dashboard with completion rates
-
-### Phase 3 Features (AI Chatbot Enhancement)
-- Natural language processing for task management
-- Conversational interface for todo operations
-- MCP (Model Context Protocol) server integration
-- Conversation history persistence
-- Secure user isolation for chatbot interactions
-- AI-powered task creation, listing, completion, and deletion
-- Real-time chat interface with message history
 
 ## Getting Started
 
@@ -48,7 +36,6 @@ This is a full-stack todo application built with Next.js 16 and FastAPI, featuri
 - Node.js 18+
 - Python 3.11+
 - PostgreSQL database (Neon)
-- OpenAI API key (for AI features)
 
 ### Frontend Setup
 ```bash
@@ -65,15 +52,10 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate  # Windows
 pip install -r requirements.txt
-# Run both servers:
-python start_services.py
-# OR separately:
-# uvicorn main:app --reload  # Main API
-# uvicorn mcp_server.server:app --reload  # MCP Server
+uvicorn main:app --reload
 ```
 
-Main API runs on http://localhost:8000
-MCP Server runs on http://localhost:8001
+Runs on http://localhost:8000
 
 ## API Endpoints
 
@@ -94,25 +76,19 @@ MCP Server runs on http://localhost:8001
 ### Statistics
 - `GET /api/{user_id}/stats` - Get user statistics
 
-### Chatbot
-- `POST /api/{user_id}/chat` - Chat with AI assistant
-
 ## Environment Variables
 
 ### Frontend (.env.local)
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_OPENAI_API_KEY=your-openai-api-key-here
 ```
 
 ### Backend (.env)
 ```
 DATABASE_URL=postgresql://user:password@host:5432/db
-BETTER_AUTH_SECRET=your-super-secret-key-at-least-32-characters-long
-JWT_SECRET=your-super-secret-key-at-least-32-characters-long
+JWT_SECRET=your-secret-key
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
-OPENAI_API_KEY=your-openai-api-key-here
 ```
 
 ## Project Structure
@@ -121,24 +97,17 @@ phase-2/
 ├── frontend/           # Next.js 16 application
 │   ├── app/           # App Router pages
 │   │   ├── (auth)/    # Auth pages (signin, signup)
-│   │   ├── (dashboard)/ # Dashboard pages
-│   │   └── chat/      # AI Chatbot page
+│   │   └── (dashboard)/ # Dashboard pages
 │   ├── components/    # React components
 │   │   ├── auth/      # Auth components
 │   │   ├── tasks/     # Task components
-│   │   ├── layout/    # Layout components (including chat navigation)
 │   │   └── ui/        # UI primitives
 │   └── lib/           # Utilities and API client
 ├── backend/           # FastAPI application
 │   ├── routes/        # API endpoints
-│   ├── services/      # Business logic services
-│   │   └── mcp_tools.py # MCP tools for AI integration
-│   ├── mcp_server/    # MCP server for AI tools
-│   │   └── server.py  # MCP server implementation
 │   ├── models.py      # SQLModel definitions
 │   ├── schemas.py     # Pydantic schemas
-│   ├── db.py          # Database connection
-│   └── start_services.py # Script to start all services
+│   └── db.py          # Database connection
 └── specs/             # Feature specifications
 ```
 
@@ -151,7 +120,7 @@ This project uses Spec-Driven Development (SDD) with Spec-Kit Plus:
 4. `/sp.implement` - Execute implementation
 5. `/sp.git.commit_pr` - Commit and create PR
 
-## Phase Completions
+## Phase 2 Completion
 ✅ **Phase 2: Full-Stack Web Application** - COMPLETE
 - All Basic, Intermediate, and Advanced features implemented
 - Full authentication system
@@ -159,10 +128,3 @@ This project uses Spec-Driven Development (SDD) with Spec-Kit Plus:
 - Statistics dashboard
 - Modern UI with responsive design
 - Database integration with PostgreSQL
-
-✅ **Phase 3: AI-Powered Todo Chatbot** - COMPLETE
-- Natural language processing for task management
-- MCP server for AI agent integration
-- Conversational interface for todo operations
-- Conversation history persistence
-- Secure user isolation for chatbot interactions
