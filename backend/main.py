@@ -32,7 +32,7 @@ app.add_middleware(
         "http://0.0.0.0:3000",   # Docker container access
         "http://localhost:3002",  # Additional common dev port
         "http://127.0.0.1:3002",
-        "https://frontend-todo-smoky.vercel.app/",  # For Vercel deployments
+        "https://frontend-deploy-7yvc.vercel.app/",  # For Vercel deployments
         "http://localhost:19006",  # For Expo apps
         "exp://*",  # For Expo apps
         "*"  # Allow all origins in development - remove for production
@@ -152,3 +152,4 @@ def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

@@ -23,7 +23,13 @@ from schemas import (
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 # Security
-JWT_SECRET = os.getenv("JWT_SECRET", "your-super-secret-key-at-least-32-characters-long")
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    # Fallback secret only for development - this should be set in production
+    JWT_SECRET = os.getenv("DEV_JWT_SECRET", "your-super-secret-key-at-least-32-characters-long")
+    if JWT_SECRET == "your-super-secret-key-at-least-32-characters-long":
+        print("WARNING: Using default JWT secret. This should be changed in production!")
+
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 
@@ -37,8 +43,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password, truncating to 72 bytes for bcrypt compatibility"""
-    return pwd_context.hash(password.encode('utf-8')[:72])
+    """Hash a password, ensuring it doesn't exceed bcrypt's 72-character limit"""
+    # Bcrypt only uses the first 72 bytes, so we truncate if necessary
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        # Truncate to 72 bytes but decode back to string for hashing
+        password = password_bytes[:72].decode('utf-8', errors='ignore')
+    return pwd_context.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -68,29 +79,44 @@ async def signup(user_data: UserCreate, session: Session = Depends(get_session))
     Raises:
         HTTPException: If email already exists or validation fails
     """
-    # Check if email already exists
-    existing_user = session.exec(select(User).where(User.email == user_data.email)).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered"
+    try:
+        # Check if email already exists
+        existing_user = session.exec(select(User).where(User.email == user_data.email)).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered"
+            )
+
+        # Create user
+        user = User(
+            id=str(uuid.uuid4()),
+            email=user_data.email,
+            name=user_data.name,
+            password_hash=get_password_hash(user_data.password),
         )
+        session.add(user)
+        session.commit()
+        session.refresh(user)
 
-    # Create user
-    user = User(
-        id=str(uuid.uuid4()),
-        email=user_data.email,
-        name=user_data.name,
-        password_hash=get_password_hash(user_data.password),
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
+        # Create token
+        token = create_access_token(data={"sub": user.id, "email": user.email})
 
-    # Create token
-    token = create_access_token(data={"sub": user.id, "email": user.email})
+        return AuthResponse(user=UserResponse.from_orm(user), token=token)
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        # Log the error for debugging
+        print(f"Signup error: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
-    return AuthResponse(user=UserResponse.from_orm(user), token=token)
+        # Raise a generic server error
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during signup"
+        )
 
 
 @router.post("/signin", response_model=AuthResponse)
@@ -108,19 +134,34 @@ async def signin(credentials: UserLogin, session: Session = Depends(get_session)
     Raises:
         HTTPException: If credentials are invalid
     """
-    # Find user by email
-    user = session.exec(select(User).where(User.email == credentials.email)).first()
+    try:
+        # Find user by email
+        user = session.exec(select(User).where(User.email == credentials.email)).first()
 
-    if not user or not verify_password(credentials.password, user.password_hash):
+        if not user or not verify_password(credentials.password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
+            )
+
+        # Create token
+        token = create_access_token(data={"sub": user.id, "email": user.email})
+
+        return AuthResponse(user=UserResponse.from_orm(user), token=token)
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        # Log the error for debugging
+        print(f"Signin error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+
+        # Raise a generic server error
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during signin"
         )
-
-    # Create token
-    token = create_access_token(data={"sub": user.id, "email": user.email})
-
-    return AuthResponse(user=UserResponse.from_orm(user), token=token)
 
 
 async def verify_token(

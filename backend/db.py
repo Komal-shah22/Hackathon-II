@@ -25,6 +25,12 @@ def get_session():
 
 def init_db():
     """Initialize database tables"""
-    # This will create tables for all models that inherit from SQLModel
-    SQLModel.metadata.create_all(engine)
-    print("Database initialized successfully.")
+    try:
+        # This will create tables for all models that inherit from SQLModel
+        SQLModel.metadata.create_all(engine)
+        print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Database initialization error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
