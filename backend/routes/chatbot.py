@@ -102,27 +102,200 @@ async def process_natural_language_request_with_openai(user_id: str, message: st
     # This would require the OPENAI_API_KEY to be set
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        # For development without API key, return a mock response
-        # This is a fallback that simulates AI behavior for development
-        mock_responses = {
-            "hello": "Hello! I'm your AI assistant. How can I help you with your tasks today?",
-            "hi": "Hi there! I'm ready to help you manage your tasks.",
-            "help": "I can help you add, list, update, complete, or delete tasks. Try saying 'add a task to buy groceries' or 'show me my tasks'.",
-            "default": f"I received your message: '{message}'. For actual AI responses, please configure your OPENAI_API_KEY environment variable."
-        }
+        # For development without API key, try to parse the message and call MCP tools directly
+        # This allows the chatbot to work in development mode without OpenAI API
+        import re
+        import json
 
-        lower_msg = message.lower()
-        if "hello" in lower_msg:
-            response_text = mock_responses["hello"]
-        elif "hi " in lower_msg or lower_msg.startswith("hi"):
-            response_text = mock_responses["hi"]
-        elif "help" in lower_msg or "what can you" in lower_msg:
-            response_text = mock_responses["help"]
-        else:
-            response_text = mock_responses["default"]
+        # Parse the message to determine which action to take
+        message_lower = message.lower().strip()
 
+        # Try to detect intent from the message
+        if any(word in message_lower for word in ["add", "create", "make", "new"]):
+            # Look for task title in the message
+            # Simple pattern to extract task title after "add" or "create"
+            patterns = [
+                r"add\s+(?:a\s+|an\s+|the\s+)?(?:task\s+to\s+|to\s+)?(.+)",
+                r"create\s+(?:a\s+|an\s+|the\s+)?(?:task\s+to\s+|to\s+)?(.+)",
+                r"make\s+(?:a\s+|an\s+|the\s+)?(?:task\s+to\s+|to\s+)?(.+)"
+            ]
+
+            task_title = None
+            for pattern in patterns:
+                match = re.search(pattern, message_lower)
+                if match:
+                    task_title = match.group(1).strip()
+                    break
+
+            if task_title:
+                # Call MCP server to add task
+                try:
+                    async with httpx.AsyncClient(timeout=30.0) as client_http:
+                        mcp_response = await client_http.post(
+                            f"http://localhost:8001/mcp/tools/add_task",
+                            json={"user_id": user_id, "title": task_title}
+                        )
+
+                        if mcp_response.status_code == 200:
+                            result = mcp_response.json()["result"]
+                            return {
+                                "response": f"I've added the task '{task_title}' for you.",
+                                "tool_calls": [{"name": "add_task", "arguments": {"title": task_title}}]
+                            }
+                        else:
+                            return {
+                                "response": f"Sorry, I couldn't add the task '{task_title}'. Error: {mcp_response.text}",
+                                "tool_calls": []
+                            }
+                except Exception as e:
+                    return {
+                        "response": f"Sorry, I encountered an error adding the task: {str(e)}",
+                        "tool_calls": []
+                    }
+
+        elif any(word in message_lower for word in ["list", "show", "display", "see", "view"]):
+            # Determine if user wants all, pending, or completed tasks
+            status = "all"
+            if "pending" in message_lower or "incomplete" in message_lower:
+                status = "pending"
+            elif "completed" in message_lower or "done" in message_lower:
+                status = "completed"
+
+            # Call MCP server to list tasks
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client_http:
+                    mcp_response = await client_http.post(
+                        f"http://localhost:8001/mcp/tools/list_tasks",
+                        json={"user_id": user_id, "status": status}
+                    )
+
+                    if mcp_response.status_code == 200:
+                        result = mcp_response.json()["result"]
+                        if result:
+                            task_list = "\n".join([f"- {task['id']}: {task['title']}" + (" (completed)" if task['completed'] else "") for task in result])
+                            status_desc = f"{status} " if status != "all" else ""
+                            return {
+                                "response": f"Here are your {status_desc}tasks:\n{task_list}",
+                                "tool_calls": [{"name": "list_tasks", "arguments": {"status": status}}]
+                            }
+                        else:
+                            status_desc = f"{status} " if status != "all" else ""
+                            return {
+                                "response": f"You have no {status_desc}tasks.",
+                                "tool_calls": [{"name": "list_tasks", "arguments": {"status": status}}]
+                            }
+                    else:
+                        return {
+                            "response": f"Sorry, I couldn't retrieve your tasks. Error: {mcp_response.text}",
+                            "tool_calls": []
+                        }
+            except Exception as e:
+                return {
+                    "response": f"Sorry, I encountered an error retrieving tasks: {str(e)}",
+                    "tool_calls": []
+                }
+
+        elif any(word in message_lower for word in ["complete", "finish", "done", "mark"]):
+            # Look for task ID in the message
+            task_id_match = re.search(r"task\s+(\d+)", message_lower)
+            if task_id_match:
+                task_id = int(task_id_match.group(1))
+
+                # Call MCP server to complete task
+                try:
+                    async with httpx.AsyncClient(timeout=30.0) as client_http:
+                        mcp_response = await client_http.post(
+                            f"http://localhost:8001/mcp/tools/complete_task",
+                            json={"user_id": user_id, "task_id": task_id}
+                        )
+
+                        if mcp_response.status_code == 200:
+                            result = mcp_response.json()["result"]
+                            return {
+                                "response": f"I've marked task #{task_id} ('{result['title']}') as completed.",
+                                "tool_calls": [{"name": "complete_task", "arguments": {"task_id": task_id}}]
+                            }
+                        else:
+                            return {
+                                "response": f"Sorry, I couldn't complete task #{task_id}. Error: {mcp_response.text}",
+                                "tool_calls": []
+                            }
+                except Exception as e:
+                    return {
+                        "response": f"Sorry, I encountered an error completing the task: {str(e)}",
+                        "tool_calls": []
+                    }
+
+        elif any(word in message_lower for word in ["delete", "remove", "cancel"]):
+            # Look for task ID in the message
+            task_id_match = re.search(r"task\s+(\d+)", message_lower)
+            if task_id_match:
+                task_id = int(task_id_match.group(1))
+
+                # Call MCP server to delete task
+                try:
+                    async with httpx.AsyncClient(timeout=30.0) as client_http:
+                        mcp_response = await client_http.post(
+                            f"http://localhost:8001/mcp/tools/delete_task",
+                            json={"user_id": user_id, "task_id": task_id}
+                        )
+
+                        if mcp_response.status_code == 200:
+                            result = mcp_response.json()["result"]
+                            return {
+                                "response": f"I've deleted task #{task_id} ('{result['title']}').",
+                                "tool_calls": [{"name": "delete_task", "arguments": {"task_id": task_id}}]
+                            }
+                        else:
+                            return {
+                                "response": f"Sorry, I couldn't delete task #{task_id}. Error: {mcp_response.text}",
+                                "tool_calls": []
+                            }
+                except Exception as e:
+                    return {
+                        "response": f"Sorry, I encountered an error deleting the task: {str(e)}",
+                        "tool_calls": []
+                    }
+
+        elif any(word in message_lower for word in ["update", "change", "modify", "rename"]):
+            # Look for task ID and new title in the message
+            task_id_match = re.search(r"task\s+(\d+)", message_lower)
+            if task_id_match:
+                task_id = int(task_id_match.group(1))
+
+                # Look for new title after "to" or "as"
+                new_title_match = re.search(r"(?:to|as)\s+(.+)$", message_lower)
+                if new_title_match:
+                    new_title = new_title_match.group(1).strip()
+
+                    # Call MCP server to update task
+                    try:
+                        async with httpx.AsyncClient(timeout=30.0) as client_http:
+                            mcp_response = await client_http.post(
+                                f"http://localhost:8001/mcp/tools/update_task",
+                                json={"user_id": user_id, "task_id": task_id, "title": new_title}
+                            )
+
+                            if mcp_response.status_code == 200:
+                                result = mcp_response.json()["result"]
+                                return {
+                                    "response": f"I've updated task #{task_id} to '{new_title}'.",
+                                    "tool_calls": [{"name": "update_task", "arguments": {"task_id": task_id, "title": new_title}}]
+                                }
+                            else:
+                                return {
+                                    "response": f"Sorry, I couldn't update task #{task_id}. Error: {mcp_response.text}",
+                                    "tool_calls": []
+                                }
+                    except Exception as e:
+                        return {
+                            "response": f"Sorry, I encountered an error updating the task: {str(e)}",
+                            "tool_calls": []
+                        }
+
+        # Default fallback response
         return {
-            "response": response_text,
+            "response": f"I received your message: '{message}'. I can help you add, list, update, complete, or delete tasks. Try saying 'add a task to buy groceries' or 'show me my tasks'.",
             "tool_calls": []
         }
 
@@ -266,7 +439,7 @@ async def process_natural_language_request_with_openai(user_id: str, message: st
 
                             # Make HTTP request to MCP server
                             mcp_response = await client_http.post(
-                                f"http://localhost:8002{mcp_endpoint_map[function_name]}",
+                                f"http://localhost:8001{mcp_endpoint_map[function_name]}",
                                 json=mcp_params
                             )
 
@@ -365,7 +538,7 @@ async def process_natural_language_request_with_openai(user_id: str, message: st
                     # Make HTTP request to MCP server
                     async with httpx.AsyncClient(timeout=30.0) as client_http:
                         mcp_response = await client_http.post(
-                            f"http://localhost:8002{mcp_endpoint_map[function_name]}",
+                            f"http://localhost:8001{mcp_endpoint_map[function_name]}",
                             json=mcp_params
                         )
 

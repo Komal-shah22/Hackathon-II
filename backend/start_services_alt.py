@@ -42,20 +42,20 @@ def start_main_api():
 
 def start_mcp_server():
     """Start the MCP server"""
-    print("Starting MCP server on port 8002...")
+    print("Starting MCP server on port 8001...")
     try:
-        subprocess.run([sys.executable, "-m", "uvicorn", "mcp_server.server:app", "--host", "0.0.0.0", "--port", "8002"], check=True)
+        subprocess.run([sys.executable, "-m", "uvicorn", "mcp_server.server:app", "--host", "0.0.0.0", "--port", "8001"], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Failed to start MCP server: {e}")
 
 def main():
     print("Starting Todo Chatbot services...")
 
-    # Check and kill any processes on ports 8000 and 8002 (instead of 8001 to avoid conflict)
+    # Check and kill any processes on ports 8000 and 8001
     if kill_process_on_port(8000):
         time.sleep(1)  # Wait a bit for the port to be released
 
-    if kill_process_on_port(8002):
+    if kill_process_on_port(8001):
         time.sleep(1)  # Wait a bit for the port to be released
 
     # Start MCP server in a separate thread
