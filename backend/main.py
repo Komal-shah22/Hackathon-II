@@ -32,10 +32,11 @@ app.add_middleware(
         "http://0.0.0.0:3000",   # Docker container access
         "http://localhost:3002",  # Additional common dev port
         "http://127.0.0.1:3002",
-        "https://frontend-deploy-7yvc.vercel.app/",  # For Vercel deployments
+        "https://frontend-deploy-7yvc.vercel.app",  # For Vercel deployments (removed trailing slash)
         "http://localhost:19006",  # For Expo apps
         "exp://*",  # For Expo apps
-        "*"  # Allow all origins in development - remove for production
+        # For production on HuggingFace Spaces, we'll read from environment
+        os.getenv("FRONTEND_URL", ""),  # Allow frontend URL from environment
     ],
     allow_credentials=True,
     allow_methods=["*"],

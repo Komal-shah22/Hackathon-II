@@ -29,6 +29,10 @@ if not JWT_SECRET:
     JWT_SECRET = os.getenv("DEV_JWT_SECRET", "your-super-secret-key-at-least-32-characters-long")
     if JWT_SECRET == "your-super-secret-key-at-least-32-characters-long":
         print("WARNING: Using default JWT secret. This should be changed in production!")
+        # For HuggingFace Spaces, we might have a different environment variable
+        HF_JWT_SECRET = os.getenv("HF_JWT_SECRET")
+        if HF_JWT_SECRET:
+            JWT_SECRET = HF_JWT_SECRET
 
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
@@ -80,6 +84,19 @@ async def signup(user_data: UserCreate, session: Session = Depends(get_session))
         HTTPException: If email already exists or validation fails
     """
     try:
+        # Validate input data
+        if not user_data.email or '@' not in user_data.email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid email address"
+            )
+
+        if len(user_data.password) < 8:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters long"
+            )
+
         # Check if email already exists
         existing_user = session.exec(select(User).where(User.email == user_data.email)).first()
         if existing_user:
@@ -91,8 +108,8 @@ async def signup(user_data: UserCreate, session: Session = Depends(get_session))
         # Create user
         user = User(
             id=str(uuid.uuid4()),
-            email=user_data.email,
-            name=user_data.name,
+            email=user_data.email.lower().strip(),  # Normalize email
+            name=user_data.name.strip() if user_data.name else None,
             password_hash=get_password_hash(user_data.password),
         )
         session.add(user)
@@ -106,11 +123,19 @@ async def signup(user_data: UserCreate, session: Session = Depends(get_session))
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
+    except ValueError as ve:
+        # Handle validation errors from Pydantic
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation error: {str(ve)}"
+        )
     except Exception as e:
-        # Log the error for debugging
-        print(f"Signup error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        # Log the error for debugging (only in non-production environments)
+        import os
+        if os.getenv("ENVIRONMENT") != "production":
+            print(f"Signup error: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
         # Raise a generic server error
         raise HTTPException(
@@ -135,8 +160,21 @@ async def signin(credentials: UserLogin, session: Session = Depends(get_session)
         HTTPException: If credentials are invalid
     """
     try:
+        # Validate input data
+        if not credentials.email or '@' not in credentials.email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid email address"
+            )
+
+        if not credentials.password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password is required"
+            )
+
         # Find user by email
-        user = session.exec(select(User).where(User.email == credentials.email)).first()
+        user = session.exec(select(User).where(User.email == credentials.email.lower().strip())).first()
 
         if not user or not verify_password(credentials.password, user.password_hash):
             raise HTTPException(
@@ -151,11 +189,19 @@ async def signin(credentials: UserLogin, session: Session = Depends(get_session)
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
+    except ValueError as ve:
+        # Handle validation errors from Pydantic
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation error: {str(ve)}"
+        )
     except Exception as e:
-        # Log the error for debugging
-        print(f"Signin error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        # Log the error for debugging (only in non-production environments)
+        import os
+        if os.getenv("ENVIRONMENT") != "production":
+            print(f"Signin error: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
         # Raise a generic server error
         raise HTTPException(
