@@ -165,7 +165,7 @@ async def process_natural_language_request_with_openai(user_id: str, message: st
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client_http:
                     mcp_response = await client_http.post(
-                        f"http://localhost:8001/mcp/tools/list_tasks",
+                        f"https://komal-agentic-ai-developer-hackathon-2.hf.space/mcp/tools/list_tasks",
                         json={"user_id": user_id, "status": status}
                     )
 
