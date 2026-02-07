@@ -26,8 +26,8 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 JWT_SECRET = os.getenv("JWT_SECRET")
 if not JWT_SECRET:
     # Fallback secret only for development - this should be set in production
-    JWT_SECRET = os.getenv("DEV_JWT_SECRET", "your-super-secret-key-at-least-32-characters-long")
-    if JWT_SECRET == "your-super-secret-key-at-least-32-characters-long":
+    JWT_SECRET = os.getenv("DEV_JWT_SECRET", "90df3dfaec15056dd3902590eaf1bd5d0787ac40c0f6aa93649cf7b74d54df32")
+    if JWT_SECRET == "90df3dfaec15056dd3902590eaf1bd5d0787ac40c0f6aa93649cf7b74d54df32":
         print("WARNING: Using default JWT secret. This should be changed in production!")
         # For HuggingFace Spaces, we might have a different environment variable
         HF_JWT_SECRET = os.getenv("HF_JWT_SECRET")
